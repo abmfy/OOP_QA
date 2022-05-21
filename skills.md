@@ -102,8 +102,69 @@ int main() {
 SFINAE has many applications. Here are some good uses: [C++ SFINAE examples](https://stackoverflow.com/questions/982808/c-sfinae-examples "Stack Overflow").
 You can find more information [here](https://en.cppreference.com/w/cpp/language/sfinae "cppreference.com").
 
-------
-### A way to save the memory in dynamic programming (DP) problems
+## Copy and Swap Idiom
+
+Typically, we wrote copy assignment operators like this:
+
+```cpp
+T &operator = (const T &other) {
+    if (this == &other) {
+        return *this;
+    }
+
+    // Release resources owned by self
+    /* Do something like ~T() */
+
+    // Copy member variables from other
+    /* Do something like T(const T&) */
+
+    return *this;
+}
+```
+
+You may notice that what it does is simply executes the destructor and then the copy constructor.
+Then why couldn't we make use of the defined destructor and copy constructor?
+
+Here comes the copy and swap idiom:
+
+```cpp
+T &operator = (T other) {
+    swap(*this, other);
+    return *this;
+}
+```
+
+No more code? Yes, no more!
+> Though you need to define `swap` for type `T`.
+> Considering `swap` is a common need, this requirement is not excessive.
+> 
+> Even if you really don't want to define `swap`, you can simply substitute the `swap(*this, other)` with lines of `swap(_m, other._m)` for all member variable `_m`. That is, you implement `swap` in the assignment operator.
+>
+> Because here you don't need to care about releasing resources or allocating new memory or whatever kind of stuff, the copy and swap idiom is still favorable for you to use.
+>
+> However, since you've implement `swap` in the assignment operator, why don't you implement it outside and enjoy the graceful form above?
+
+You may notice that the argument of the operator becomes `T` instead of `const T&`.
+In fact, that's where the magic comes from!
+Let's dig into how the copy and swap idiom works.
+
+Say we wrote `a = b`, where `a` and `b` have been defined before and are of type `T`.
+
+Firstly, because the parameter is of type `T`, not a reference, the copy constructor of `T` is called to copy construct `other` from `b`. The copy constructor takes care of all the complexity to allocate new resources and copy them.
+
+Then, `*this` is swapped with `other`. This is of constant time complexity. Now, `*this` contains what `other` previously contains, that is what it copies from `b`. In the other word, `a` contains a copy of `b`.
+
+Finally, before the operator returns, since `other` is a value parameter, the destructor of `T` is called to destruct `other`. Remember what `other` contains now? It contains previously `a`. So the destructor is actually cleaning up the resources `a` previously holds.
+
+After the destructor call, the operator returns. Now, the resources `a` previously holds have been released during the destruction of `other`, and the contents of `b` is firstly copied to `other` and then swapped into `a`, so `a` is now a copy of `b`.
+
+We can see that copy and swap idiom is a concise and effective way of writing assignment operator. It reuses the destructor and the copy constructor to make things works gracefully.
+
+However, there are two small problems of copy and swap idiom:
++ It couldn't avoid self-assignment. That's because the parameter is passed by value. The parameter is always copied and we cannot prevent self being copied. But don't need to worry about correctness. You can see that because we're copying `*this` into `other`, we will be holding a copy of `*this` after assignment, and the original copy will be destructed. So we won't be holding any wild resources, and the correctness is preserved. The only overhead is the copy of `*this`. But since self-assignment is quite rare, this won't cause any trouble.
++ We couldn't make use of possibly reusable resources. Say `T` is holding a heap-allocated array of size `n`. Usually, we need to free the array and reallocate it because when executing `a = b`, the size of array of `a` often differs from `b`. But if you find that `b` is holding an array of `n` too, you can reuse your array and save the cost of freeing and reallocating. However, using copy and swap idiom this is impossible. The reason is the same as above: before you could judge whether resource reuse is possible, the copy is done. Typically we don't need to worry about this too, because reusing resources is just embellishing what is already beautiful, not rendering timely help. It's not an overhead, it's just the normal cost that we have expected to spend.
+
+## A way to save the memory in dynamic programming (DP) problems
 
 This skill can help you **save the memory** just using a one-dimension array instead of a two-dimension array when you are solving problems where *dynamic programming* is used. Check the two points listed as follows and then you can use the skill.
 
