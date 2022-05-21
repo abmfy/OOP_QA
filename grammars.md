@@ -48,6 +48,58 @@ std::tuple<int, double, std::string> f() {
 auto [x, y, z] = f();  // structured binding (C++17)
 ```
 
+## optional
+
+C++17 introduced `optional` type, which either contains some value or contains nil. This is useful as a return type of a function that may fail, for instance, a function that tries to convert a string to an integer.
+
+`optional` is defined in header `<optional>`. It's a class template `template <class T> class optiional`.
+
+To make an optional value, we can use `make_optional` helper function. `optional<T>` can be constructed from a value of `T`, too. It can also be constructed with no parameter or a parameter of type `nullopt_t`, of which type the only instance is `nullopt`, to indicate that an `optional` doesn't contain a value.
+
+An `optional` value can explicitly convert to a bool value, so we can use an `if` statement to check whether an `optional` value contains some value. We can also call `optional`'s member function `has_value()` to check it. If it contains some value, we can use the indirect operator `*` or call member function `value()` to get the value.
+
+```cpp
+template <class T>
+void check(optional<T> x) {
+    if (x) {
+        cout << *x << endl;
+    } else {
+        cout << "nil" << endl;
+    }
+}
+int main() {
+    optional<int> x {233}, y {nullopt};
+    check(x), check(y);
+    optional<string> s {"Hello!"}, t {}, r;
+    check(s), check(t), check(r);
+    check(make_optional(23.4));
+}
+// Output: 233 nil Hello! nil nil 23.4
+```
+
+We can use operator `->` to access `T`'s members. Be careful that `*` and `->` operator causes undefined behavior if the `optional` doesn't contain a value. When calling `value()` member function, `bad_optional_access` exception is thrown when the `optional` doesn't contain a value.
+
+If we want to clear the content of an `optional`, we can either call `reset()` member function or assign `nullopt` to the optional.
+
+To provide default value when an `optional` doesn't contain a value, we can use member function `value_or()`. It returns the value if it exists, or a default value we provided.
+
+```cpp
+optional<string> s {"Hello!"}, t {"World!"};
+if (s && t) {
+    cout << s->substr(2) << *t << endl;
+}
+s.reset();
+cout << boolalpha << s.has_value() << endl;
+try {
+    cout << s.value() << endl;
+} catch (const exception &e) {
+    cout << e.what() << endl;
+}
+t = nullopt;
+cout << t.value_or("nil") << endl;
+// Output: llo!World! false bad_optional_access nil
+```
+
 ## noexcept
 
 ​	Starting with C++11, we've seen a lot of code with the keyword noexcept. This keyword tells the compiler that no exceptions will occur in the function, which is conducive to the compiler to do more optimization of the program. If the noexcept function throws an exception outward (if the exception isn't caught inside the function and handled), the program terminates directly, calling the std::terminate() function, which internally calls std::abort() to abort the program.
@@ -636,4 +688,3 @@ The most comfortable way to "open" a parameter pack is to use a recursive functi
 
 为了区分NULL和0，C++11引入了空指针nullptr。nullptr的类型为std::nullptr_t而非指针或int，可以保证nullptr表示空指针而不是0。
 在使用空指针时，应该尽量使用nullptr而不是NULL。
-
