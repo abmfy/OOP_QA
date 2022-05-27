@@ -52,7 +52,7 @@ auto [x, y, z] = f();  // structured binding (C++17)
 
 C++17 introduced `optional` type, which either contains some value or contains nil. This is useful as a return type of a function that may fail, for instance, a function that tries to convert a string to an integer.
 
-`optional` is defined in header `<optional>`. It's a class template `template <class T> class optiional`.
+`optional` is defined in header `<optional>`. It's a class template `template <class T> class optional`.
 
 To make an optional value, we can use `make_optional` helper function. `optional<T>` can be constructed from a value of `T`, too. It can also be constructed with no parameter or a parameter of type `nullopt_t`, of which type the only instance is `nullopt`, to indicate that an `optional` doesn't contain a value.
 
